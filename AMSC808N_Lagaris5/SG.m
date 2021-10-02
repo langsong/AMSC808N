@@ -1,3 +1,4 @@
+%% I collaborated with Zhirui Li on this implementation of the SG algorithm
 function [fall,norg] = SG(nt,N,tol,iter_max)
 fsz = 16; % fontsize
 %% setup training mesh
@@ -29,20 +30,20 @@ fall(1) = f;
 
 % TODO: DEFINE STEPSIZE 
 alpha0 = 0.5; %initial stepsize
-m0 = 150;
+r_size = 150; %initial round size
 while nor > tol && iter < iter_max
     
-    if iter <= m0
+    if iter <= r_size  %for the first r_size iterations, use initial stepsize
         alpha = alpha0;
-    elseif iter < 2*m0
+    elseif iter <= 2*r_size  %for the next r_size iterations, use alpha0/2 stepsize
         alpha = alpha0/2;
-    else
-        iteration = iter - 2*m0;
-        l = 2:40;
-        seq = idivide(int64(2.^l), int64(l));
-        index = m0.*cumsum(seq);
-        group = find(index > iteration, 1, 'first');
-        alpha = alpha0/(2^(group+1));
+    else  %if current iteration is greater than 2*r_size 
+        cur_iter = iter - 2*r_size;  
+        index = 2:40; 
+        factor = idivide(int64(2.^index), int64(index)); 
+        round_length = r_size.*cumsum(factor);  %thresholds that determine when to reduce stepsize
+        round_index = find(round_length > cur_iter, 1, 'first');  %find the corresponding round index the current iteration is on
+        alpha = alpha0/(2^(round_index+1));  
     end
     % TODO: insert the SG algorithm here 
     w = w - alpha*g;
