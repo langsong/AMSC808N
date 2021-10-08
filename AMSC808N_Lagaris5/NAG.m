@@ -1,5 +1,4 @@
-%% I collaborated with Zhirui Li on this implementation of the SG algorithm
-function [fall,norg] = SG(nt,N,tol,iter_max)
+function [fall,norg] = NAG(nt,N,tol,iter_max)
 fsz = 16; % fontsize
 %% setup training mesh
 t = linspace(0,1,nt+2);
@@ -22,41 +21,35 @@ fprintf('Initially: f = %d, nor(g) = %d\n',f,nor);
 %% The trust region BFGS method
 tic % start measuring the CPU time
 iter = 0;
-b_size = 15;
 norg = zeros(iter_max+1,0);
 fall = zeros(iter_max+1,0);
 norg(1) = nor;
 fall(1) = f;
 
 % TODO: DEFINE STEPSIZE 
-alpha0 = 1; %initial stepsize
-r_size = 10; %initial round size
+alpha = 0.15;
+m = w; 
 while nor > tol && iter < iter_max
     
-    if iter <= r_size  %for the first r_size iterations, use initial stepsize
-        alpha = alpha0;
-    elseif iter <= 2*r_size  %for the next r_size iterations, use alpha0/2 stepsize
-        alpha = alpha0/2;
-    else  %if current iteration is greater than 2*r_size 
-        cur_iter = iter - 2*r_size;  
-        index = 2:40; 
-        factor = idivide(int64(2.^index), int64(index)); 
-        round_length = r_size.*cumsum(factor);  %thresholds that determine when to reduce stepsize
-        round_index = find(round_length > cur_iter, 1, 'first');  %find the corresponding round index the current iteration is on
-        alpha = alpha0/(2^(round_index+1));  
-    end
-    % TODO: insert the SG algorithm here 
-    w = w - alpha*g;
-    sampleindex = sort(randperm(Ntrain,b_size));
-    xy_batch = xy(:, sampleindex);
-    [r,J] = Res_and_Jac(w,xy_batch);
+    mu = 1 - (3/(5 + iter));
+    % TODO: insert the gradient descend algorithm here 
+%     w_pre = w;
+%     w = m - alpha*g;
+%     m = (1+mu) * w - mu * w_pre;
+    
+    m_pre = m;
+    m = w - alpha*g;
+    w = (1+mu) * m - mu * m_pre;
+    
+    [r,J] = Res_and_Jac(w,xy);
     f = F(r);
     g = J'*r/Ntrain;
     nor = norm(g);
+    
     fprintf('iter %d: f = %d, norg = %d\n',iter,f,nor);
     iter = iter + 1;
     norg(iter+1) = nor;
-    fall(iter+1) = f;
+    fall(iter+1) = f; 
 end
 fprintf('iter # %d: f = %.14f, |df| = %.4e\n',iter,f,nor);
 cputime = toc;

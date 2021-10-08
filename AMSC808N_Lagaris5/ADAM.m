@@ -1,5 +1,4 @@
-%% I collaborated with Zhirui Li on this implementation of the SG algorithm
-function [fall,norg] = SG(nt,N,tol,iter_max)
+function [fall,norg] = ADAM(nt,N,tol,iter_max)
 fsz = 16; % fontsize
 %% setup training mesh
 t = linspace(0,1,nt+2);
@@ -22,37 +21,32 @@ fprintf('Initially: f = %d, nor(g) = %d\n',f,nor);
 %% The trust region BFGS method
 tic % start measuring the CPU time
 iter = 0;
-b_size = 15;
 norg = zeros(iter_max+1,0);
 fall = zeros(iter_max+1,0);
 norg(1) = nor;
 fall(1) = f;
 
 % TODO: DEFINE STEPSIZE 
-alpha0 = 1; %initial stepsize
-r_size = 10; %initial round size
+beta_1 = 0.9;
+beta_2 = 0.999;
+epsilon = 1e-08; 
+m = zeros(npar, 1);
+v = zeros(npar, 1);
+alpha = 0.001;
 while nor > tol && iter < iter_max
+    % TODO: insert the gradient descend algorithm here 
+    m = beta_1 * m + (1-beta_1)*g;
+    v = beta_2 * v + (1-beta_2)*(g.*g);
+    m_h = m/(1-((beta_1)^(iter+1)));
+    v_h = v/(1-((beta_2)^(iter+1)));
     
-    if iter <= r_size  %for the first r_size iterations, use initial stepsize
-        alpha = alpha0;
-    elseif iter <= 2*r_size  %for the next r_size iterations, use alpha0/2 stepsize
-        alpha = alpha0/2;
-    else  %if current iteration is greater than 2*r_size 
-        cur_iter = iter - 2*r_size;  
-        index = 2:40; 
-        factor = idivide(int64(2.^index), int64(index)); 
-        round_length = r_size.*cumsum(factor);  %thresholds that determine when to reduce stepsize
-        round_index = find(round_length > cur_iter, 1, 'first');  %find the corresponding round index the current iteration is on
-        alpha = alpha0/(2^(round_index+1));  
-    end
-    % TODO: insert the SG algorithm here 
-    w = w - alpha*g;
-    sampleindex = sort(randperm(Ntrain,b_size));
-    xy_batch = xy(:, sampleindex);
-    [r,J] = Res_and_Jac(w,xy_batch);
+    w = w - ((alpha*m_h)./(sqrt(v_h)+epsilon));
+    %w = w - alpha*g/(double(idivide(int64(iter),int64(20)))+1);
+    [r,J] = Res_and_Jac(w,xy);
     f = F(r);
     g = J'*r/Ntrain;
     nor = norm(g);
+    
     fprintf('iter %d: f = %d, norg = %d\n',iter,f,nor);
     iter = iter + 1;
     norg(iter+1) = nor;

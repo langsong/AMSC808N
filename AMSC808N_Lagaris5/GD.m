@@ -27,7 +27,7 @@ norg(1) = nor;
 fall(1) = f;
 
 % TODO: DEFINE STEPSIZE 
-alpha = 0.5;
+alpha = 0.15;
 while nor > tol && iter < iter_max
     
     % TODO: insert the gradient descend algorithm here 
